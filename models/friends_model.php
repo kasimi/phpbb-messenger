@@ -32,19 +32,25 @@ class friends_model
 	public function getFriends()
 	{
 		$sql = "
-            SELECT u.user_id, 
-                   u.username, 
-                   u.username_clean, 
-                   u.user_type, 
-                   u.user_colour, 
-                   s.session_id, 
-                   s.session_time
-            FROM " . $this->user_friends_table."
-            LEFT JOIN " . USERS_TABLE." AS u ON u.user_id = ".$this->user_friends_table.".friend_id
-            LEFT JOIN " . SESSIONS_TABLE." AS s ON s.session_user_id = u.user_id
-            WHERE " . $this->user_friends_table.".user_id = ".(int)$this->user->data['user_id']."
-            GROUP BY u.user_id
-        ";
+			SELECT DISTINCT u.user_id, 
+			   u.username, 
+			   u.username_clean, 
+			   u.user_type, 
+			   u.user_colour, 
+			   s.session_id, 
+			   s.session_time
+		FROM " . $this->user_friends_table. " uf
+		LEFT JOIN " . USERS_TABLE . " u ON u.user_id = uf.friend_id
+		LEFT JOIN (
+			SELECT * FROM " . SESSIONS_TABLE . "
+			WHERE session_time = (
+				SELECT MAX(session_time)
+				FROM " . SESSIONS_TABLE . " s1
+				WHERE s1.session_user_id = " . (int) $this->user->data['user_id'] . "
+			)
+		) s ON s.session_user_id = uf.user_id
+		WHERE uf.user_id = " . (int) $this->user->data['user_id'];
+
 		$result = $this->db->sql_query($sql);
 
 		$friends = array();
